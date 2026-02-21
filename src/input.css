@@ -1,11 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
-*{
-    font-family: "Roboto", sans-serif;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
 
+@layer base {
+  body {
+    @apply bg-surface-50 text-surface-950 font-inter antialiased;
   }
 
-  
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-outfit font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand text-white px-6 py-2.5 rounded-full font-semibold transition-all duration-300 hover:bg-brand-dark hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .input-field {
+    @apply w-full bg-white border-b-2 border-surface-200 py-2.5 px-1 outline-none transition-all duration-300 focus:border-brand;
+  }
+}
+
+/* Custom Scrollbar Styles */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  @apply bg-surface-300 rounded-full hover:bg-surface-200 transition-colors;
+}
