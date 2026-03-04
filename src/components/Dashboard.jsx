@@ -2,11 +2,19 @@ import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { TiShoppingCart } from "react-icons/ti";
 import { MdAccountCircle } from "react-icons/md";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { logoutCustomer } from "../feature/customerAuthSlice";
 import images from "../assets/assets";
 
 const Dashboard = () => {
+  const dispatch = useDispatch();
   const totalQuantity = useSelector((state) => state.cart.totalQuantity);
+  const { customer } = useSelector((state) => state.customerAuth);
+
+  const handleLogout = () => {
+    dispatch(logoutCustomer());
+  };
+
   const links = [
     { name: "Menu", path: "menu" },
     { name: "Dine In", path: "dine" }
@@ -48,13 +56,37 @@ const Dashboard = () => {
 
           {/* Right Actions */}
           <div className="flex items-center gap-3">
-            <NavLink
-              to="sign-up"
-              className="hidden sm:flex items-center gap-2.5 px-6 py-2.5 rounded-2xl bg-surface-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-brand transition-all duration-500 hover:shadow-xl hover:shadow-brand/20 group/acc"
-            >
-              <MdAccountCircle className="text-lg opacity-70 group-hover:scale-110 transition-transform" />
-              Account
-            </NavLink>
+            {customer ? (
+              <div className="relative group/acc">
+                <button className="hidden sm:flex items-center gap-2.5 px-6 py-2.5 rounded-2xl bg-surface-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-brand transition-all duration-500 hover:shadow-xl hover:shadow-brand/20">
+                  <MdAccountCircle className="text-lg opacity-70 group-hover/acc:scale-110 transition-transform" />
+                  {customer.name}
+                </button>
+                <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-surface-200 rounded-xl shadow-xl opacity-0 invisible group-hover/acc:opacity-100 group-hover/acc:visible transition-all duration-300 z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-surface-100 flex flex-col">
+                    <span className="text-sm font-bold text-surface-950">{customer.name}</span>
+                    <span className="text-xs text-surface-400 truncate">{customer.email}</span>
+                  </div>
+                  <div className="p-2 space-y-1">
+                    <NavLink to="/orders" className="block px-3 py-2 text-sm text-surface-600 hover:text-brand hover:bg-surface-50 rounded-lg transition-colors font-medium">My Orders</NavLink>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-bold"
+                    >
+                      Log out
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <NavLink
+                to="sign-in"
+                className="hidden sm:flex items-center gap-2.5 px-6 py-2.5 rounded-2xl bg-surface-950 text-white text-[10px] font-black uppercase tracking-widest hover:bg-brand transition-all duration-500 hover:shadow-xl hover:shadow-brand/20 group/acc"
+              >
+                <MdAccountCircle className="text-lg opacity-70 group-hover:scale-110 transition-transform" />
+                Sign In
+              </NavLink>
+            )}
 
             <div className="w-px h-6 bg-surface-200 mx-1 hidden sm:block"></div>
 

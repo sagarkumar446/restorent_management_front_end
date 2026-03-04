@@ -20,7 +20,7 @@ const loadRazorpayScript = () =>
     });
 
 // ----- Payment Status Modal -----
-const PaymentModal = ({ status, paymentId, onClose }) => (
+const PaymentModal = ({ status, paymentId, orderId, onClose }) => (
     <AnimatePresence>
         {status && (
             <motion.div
@@ -42,8 +42,13 @@ const PaymentModal = ({ status, paymentId, onClose }) => (
                             <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-8">
                                 <HiCheckCircle className="text-5xl text-green-500" />
                             </div>
-                            <h2 className="text-4xl font-black mb-4">Payment Successful!</h2>
-                            <p className="text-surface-400 mb-2">Your order has been placed.</p>
+                            <h2 className="text-4xl font-black mb-4">Order Placed!</h2>
+                            <p className="text-surface-400 mb-2">Your order has been placed successfully.</p>
+                            {orderId && (
+                                <p className="text-xs font-black text-surface-300 uppercase tracking-widest mt-2 break-all">
+                                    Order ID: #{orderId}
+                                </p>
+                            )}
                             {paymentId && (
                                 <p className="text-xs font-black text-surface-300 uppercase tracking-widest mt-2 break-all">
                                     Payment ID: {paymentId}
@@ -61,7 +66,7 @@ const PaymentModal = ({ status, paymentId, onClose }) => (
                             <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-8">
                                 <HiXCircle className="text-5xl text-red-500" />
                             </div>
-                            <h2 className="text-4xl font-black mb-4">Payment Failed</h2>
+                            <h2 className="text-4xl font-black mb-4">Order Failed</h2>
                             <p className="text-surface-400 mb-8">Something went wrong. Please try again.</p>
                             <button onClick={onClose} className="mt-4 w-full btn-primary py-4">
                                 Try Again
@@ -74,12 +79,37 @@ const PaymentModal = ({ status, paymentId, onClose }) => (
     </AnimatePresence>
 );
 
+// ----- Helper: Create order in backend -----
+const createOrderInBackend = async (customerId, items, payment = null) => {
+    const now = new Date();
+    const orderDate = now.toISOString().split("T")[0]; // "YYYY-MM-DD"
+    const orderTime = now.toTimeString().split(" ")[0].substring(0, 5); // "HH:MM"
+
+    const orderPayload = {
+        items: items.map((item) => ({
+            menuItemId: item.menuItemId,
+            quantity: item.quantity,
+        })),
+        orderDate,
+        orderTime,
+        payment: payment || undefined,
+    };
+
+    const res = await axios.post(
+        `${baseURL}/customers/${customerId}/orders`,
+        orderPayload
+    );
+    return res.data?.data; // returns the saved OrderBy object
+};
+
 // ----- Main Cart Component -----
 const AddToCart = () => {
     const { items, totalAmount } = useSelector((state) => state.cart);
+    const { customer } = useSelector((state) => state.customerAuth);
     const dispatch = useDispatch();
     const [paymentStatus, setPaymentStatus] = useState(null);
     const [paymentId, setPaymentId] = useState("");
+    const [savedOrderId, setSavedOrderId] = useState(null);
     const [paying, setPaying] = useState(false);
     const [paymentEnabled, setPaymentEnabled] = useState(false);
     const [configLoading, setConfigLoading] = useState(true);
@@ -96,7 +126,37 @@ const AddToCart = () => {
     const handleRemove = (id) => dispatch(cartActions.removeFromCart(id));
     const handleClear = () => dispatch(cartActions.clearCart());
 
+    // ─── Place order at counter (no payment gateway) ───
+    const handlePlaceOrder = async () => {
+        if (!customer?.customerId) {
+            alert("Please log in to place an order.");
+            return;
+        }
+        setPaying(true);
+        try {
+            const savedOrder = await createOrderInBackend(customer.customerId, items, {
+                paymentDate: new Date().toISOString().split("T")[0],
+                paymentMethod: "COUNTER",
+                transactionReference: `COUNTER-${Date.now()}`,
+                amountPaid: totalAmount,
+            });
+            setSavedOrderId(savedOrder?.orderId);
+            setPaymentStatus("success");
+            dispatch(cartActions.clearCart());
+        } catch (err) {
+            console.error("Order placement error:", err);
+            setPaymentStatus("failed");
+        } finally {
+            setPaying(false);
+        }
+    };
+
+    // ─── Pay with Razorpay + save order ───
     const handlePayment = async () => {
+        if (!customer?.customerId) {
+            alert("Please log in to place an order.");
+            return;
+        }
         setPaying(true);
         const scriptLoaded = await loadRazorpayScript();
         if (!scriptLoaded) {
@@ -121,13 +181,22 @@ const AddToCart = () => {
                 description: `Order for ${items.length} item(s)`,
                 order_id: orderId,
                 handler: async function (response) {
-                    // Payment success callback
+                    // Payment success callback — now also save the order
                     try {
                         await axios.post(`${baseURL}/payment/verify`, {
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_order_id: response.razorpay_order_id,
                             razorpay_signature: response.razorpay_signature,
                         });
+
+                        // Save order to database
+                        const savedOrder = await createOrderInBackend(customer.customerId, items, {
+                            paymentDate: new Date().toISOString().split("T")[0],
+                            paymentMethod: "RAZORPAY",
+                            transactionReference: response.razorpay_payment_id,
+                            amountPaid: totalAmount,
+                        });
+                        setSavedOrderId(savedOrder?.orderId);
                         setPaymentId(response.razorpay_payment_id);
                         setPaymentStatus("success");
                         dispatch(cartActions.clearCart());
@@ -136,8 +205,8 @@ const AddToCart = () => {
                     }
                 },
                 prefill: {
-                    name: "Guest Customer",
-                    email: "guest@tfc.com",
+                    name: customer?.name || "Guest Customer",
+                    email: customer?.email || "guest@tfc.com",
                 },
                 notes: {
                     source: "TheFoodClub Web App",
@@ -167,6 +236,7 @@ const AddToCart = () => {
     const handleCloseModal = () => {
         setPaymentStatus(null);
         setPaymentId("");
+        setSavedOrderId(null);
     };
 
     if (items.length === 0 && !paymentStatus) {
@@ -192,7 +262,7 @@ const AddToCart = () => {
 
     return (
         <>
-            <PaymentModal status={paymentStatus} paymentId={paymentId} onClose={handleCloseModal} />
+            <PaymentModal status={paymentStatus} paymentId={paymentId} orderId={savedOrderId} onClose={handleCloseModal} />
 
             <div className="max-w-6xl mx-auto py-10 px-6">
                 <div className="flex justify-between items-center mb-12">
@@ -327,10 +397,18 @@ const AddToCart = () => {
                                 </>
                             ) : (
                                 <div className="relative z-10 mt-2">
-                                    <div className="w-full py-4 px-6 rounded-full bg-white/5 border border-white/10 text-center">
-                                        <p className="text-surface-300 text-xs font-black uppercase tracking-widest">💵 Pay at Counter</p>
-                                        <p className="text-surface-500 text-[10px] mt-1">Online payments are currently unavailable.</p>
-                                    </div>
+                                    <button
+                                        onClick={handlePlaceOrder}
+                                        disabled={paying}
+                                        className="w-full flex items-center justify-center gap-3 py-4 rounded-full bg-white text-surface-950 font-black uppercase tracking-widest text-sm hover:bg-brand hover:text-white transition-all duration-500 shadow-2xl disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        {paying ? (
+                                            <span className="animate-pulse">Placing Order...</span>
+                                        ) : (
+                                            "💵 Place Order — Pay at Counter"
+                                        )}
+                                    </button>
+                                    <p className="text-surface-500 text-[10px] mt-3 text-center">You can pay when you pick up your order.</p>
                                 </div>
                             )}
                         </div>

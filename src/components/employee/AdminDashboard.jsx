@@ -1,14 +1,38 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
+import axios from "axios";
 import { adminAuthActions } from "../../feature/adminAuthSlice";
-import { HiMenuAlt3, HiViewGrid, HiUsers, HiPlusCircle, HiLogout, HiArchive, HiCollection, HiCreditCard } from "react-icons/hi";
+import { baseURL } from "../../service";
+import { HiViewGrid, HiUsers, HiPlusCircle, HiLogout, HiArchive, HiCollection, HiCreditCard } from "react-icons/hi";
 
 const AdminDashboard = () => {
     const { admin } = useSelector((state) => state.adminAuth);
     const dispatch = useDispatch();
     const navigate = useNavigate();
+
+    const [stats, setStats] = useState(null);
+    const [recentOrders, setRecentOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await axios.get(`${baseURL}/admin/dashboard-stats`);
+                const data = res.data?.data;
+                if (data) {
+                    setStats(data);
+                    setRecentOrders(data.recentOrders || []);
+                }
+            } catch (err) {
+                console.error("Failed to fetch dashboard stats:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStats();
+    }, []);
 
     const handleLogout = () => {
         dispatch(adminAuthActions.logout());
@@ -20,20 +44,25 @@ const AdminDashboard = () => {
         return null;
     }
 
-    const stats = [
-        { name: "Total Revenue", value: "₹45,231", icon: "💰", color: "bg-green-100 text-green-600" },
-        { name: "Active Orders", value: "12", icon: "🔥", color: "bg-orange-100 text-orange-600" },
-        { name: "Total Customers", value: "248", icon: "👤", color: "bg-blue-100 text-blue-600" },
-        { name: "Menu Items", value: "42", icon: "🍱", color: "bg-purple-100 text-purple-600" },
+    const formatCurrency = (val) => {
+        if (val == null) return "₹0";
+        return "₹" + Number(val).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+    };
+
+    const statCards = [
+        { name: "Total Revenue", value: loading ? "..." : formatCurrency(stats?.totalRevenue), icon: "💰", color: "bg-green-100 text-green-600" },
+        { name: "Total Orders", value: loading ? "..." : (stats?.totalOrders ?? 0), icon: "🔥", color: "bg-orange-100 text-orange-600" },
+        { name: "Total Customers", value: loading ? "..." : (stats?.totalCustomers ?? 0), icon: "👤", color: "bg-blue-100 text-blue-600" },
+        { name: "Menu Items", value: loading ? "..." : (stats?.totalMenuItems ?? 0), icon: "🍱", color: "bg-purple-100 text-purple-600" },
     ];
 
     const actions = [
-        { name: "Add Food Item", path: "/add-food-item", icon: <HiPlusCircle />, description: "Add new dishes to the menu" },
-        { name: "Manage Menu", path: "/remove-food-item", icon: <HiArchive />, description: "Update or remove existing items" },
+        { name: "Add Food Item", path: "/admin/add-food-item", icon: <HiPlusCircle />, description: "Add new dishes to the menu" },
+        { name: "Manage Menu", path: "/admin/remove-food-item", icon: <HiArchive />, description: "Update or remove existing items" },
         { name: "Manage Categories", path: "/admin/categories", icon: <HiCollection />, description: "Add or remove menu categories" },
         { name: "Payment Settings", path: "/admin/payment-settings", icon: <HiCreditCard />, description: "Configure Razorpay gateway keys" },
         { name: "View Customers", path: "/admin/customers", icon: <HiUsers />, description: "Check registered customer base" },
-        { name: "Dine-in Setup", path: "/dine", icon: <HiViewGrid />, description: "Manage table arrangements" },
+        { name: "Dine-in Setup", path: "/admin/dine", icon: <HiViewGrid />, description: "Manage table arrangements" },
     ];
 
     return (
@@ -54,7 +83,7 @@ const AdminDashboard = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                {stats.map((stat, index) => (
+                {statCards.map((stat, index) => (
                     <motion.div
                         key={index}
                         initial={{ opacity: 0, y: 20 }}
@@ -88,20 +117,47 @@ const AdminDashboard = () => {
                 ))}
             </div>
 
-            {/* Placeholder for Recent Activity */}
+            {/* Recent Activity — Real Data */}
             <div className="mt-12 bg-white rounded-[3rem] border border-surface-200 p-10 shadow-sm">
-                <h2 className="text-2xl mb-6">Recent Activity</h2>
+                <h2 className="text-2xl mb-6">Recent <span className="text-brand">Activity</span></h2>
                 <div className="space-y-6">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="flex items-center gap-6 pb-6 border-b border-surface-100 last:border-0 last:pb-0">
-                            <div className="w-12 h-12 bg-surface-50 rounded-full flex items-center justify-center text-xl font-bold">#</div>
-                            <div className="flex-1">
-                                <p className="font-bold">New order received from Customer #24{i}</p>
-                                <p className="text-sm text-surface-400">Order for 2 items • ₹450.00</p>
+                    {loading ? (
+                        [1, 2, 3].map(i => (
+                            <div key={i} className="flex items-center gap-6 pb-6 border-b border-surface-100 last:border-0 last:pb-0 animate-pulse">
+                                <div className="w-12 h-12 bg-surface-100 rounded-full" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-4 bg-surface-100 rounded w-3/4" />
+                                    <div className="h-3 bg-surface-100 rounded w-1/2" />
+                                </div>
+                                <div className="h-3 bg-surface-100 rounded w-20" />
                             </div>
-                            <span className="text-xs font-black text-surface-300 uppercase">2 mins ago</span>
+                        ))
+                    ) : recentOrders.length === 0 ? (
+                        <div className="text-center py-12">
+                            <p className="text-4xl mb-4">📭</p>
+                            <p className="text-surface-400 font-bold">No orders yet</p>
+                            <p className="text-surface-300 text-sm mt-1">Orders will appear here as customers place them.</p>
                         </div>
-                    ))}
+                    ) : (
+                        recentOrders.map((order, idx) => (
+                            <div key={order.orderId || idx} className="flex items-center gap-6 pb-6 border-b border-surface-100 last:border-0 last:pb-0">
+                                <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center text-brand text-lg font-black">
+                                    🧾
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-bold text-surface-950">
+                                        Order #{order.orderId} — {order.customerName || "Guest"}
+                                    </p>
+                                    <p className="text-sm text-surface-400">
+                                        {order.itemCount} item{order.itemCount !== 1 ? "s" : ""} • {formatCurrency(order.totalAmount)}
+                                    </p>
+                                </div>
+                                <span className="text-xs font-black text-surface-300 uppercase whitespace-nowrap">
+                                    {order.orderDate || "N/A"} {order.orderTime ? `• ${order.orderTime}` : ""}
+                                </span>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </div>

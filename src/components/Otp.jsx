@@ -50,7 +50,7 @@ const Otp = () => {
           setTimeout(() => {
             setError("");
             setStatusType("");
-            navigator("/new-customer");
+            navigator("/new-customer", { state: email });
           }, 2000);
         }
       } catch (err) {

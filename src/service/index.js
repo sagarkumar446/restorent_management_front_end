@@ -1,6 +1,6 @@
 import axios from "axios"
 
-export const baseURL = import.meta.env.VITE_API_BASE_URL 
+export const baseURL = process.env.REACT_APP_API_BASE_URL 
 
 export default (headers = {}) => {
     const service = axios.create({
