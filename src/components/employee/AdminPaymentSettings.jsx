@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,12 +20,12 @@ const AdminPaymentSettings = () => {
     const [isNewSecret, setIsNewSecret] = useState(false); // did admin type a new secret?
     const [toast, setToast] = useState({ show: false, type: "", msg: "" });
 
-    useEffect(() => {
-        if (!admin) { navigate("/admin/login"); return; }
-        fetchConfig();
-    }, [admin]);
+    const showToast = useCallback((type, msg) => {
+        setToast({ show: true, type, msg });
+        setTimeout(() => setToast({ show: false, type: "", msg: "" }), 4000);
+    }, []);
 
-    const fetchConfig = async () => {
+    const fetchConfig = useCallback(async () => {
         setLoading(true);
         try {
             const res = await axios.get(`${baseURL}/payment/config`);
@@ -35,12 +35,12 @@ const AdminPaymentSettings = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
 
-    const showToast = (type, msg) => {
-        setToast({ show: true, type, msg });
-        setTimeout(() => setToast({ show: false, type: "", msg: "" }), 4000);
-    };
+    useEffect(() => {
+        if (!admin) { navigate("/admin/login"); return; }
+        fetchConfig();
+    }, [admin, fetchConfig, navigate]);
 
     const handleSave = async (e) => {
         e.preventDefault();

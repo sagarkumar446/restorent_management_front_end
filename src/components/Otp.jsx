@@ -17,7 +17,7 @@ const Otp = () => {
   const email = location.state || "";
   const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.SendMailSlice);
-  const [count, setCount] = useState(0);
+  const [count] = useState(0);
 
   const handleOtpInput = (value) => {
     setOtpValue(value);

@@ -7,7 +7,7 @@ import Loading from "../Loading"
 
 const RemoveFoodItem = () => {
   const dispatch = useDispatch();
-  const { loading, error, data } = useSelector(
+  const { loading, data } = useSelector(
     (state) => state.getAllMenuItemSlice
   );
   const [foodItemData, setFoodItemData] = useState(data?.data?.data);

@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const Menu = () => {
   const dispatch = useDispatch();
-  const { loading, error, data } = useSelector(
+  const { loading } = useSelector(
     (state) => state.getAllMenuItemSlice
   );
   const [foodItemData, setFoodItemData] = useState([]);

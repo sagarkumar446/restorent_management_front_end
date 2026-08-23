@@ -3,14 +3,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { addMenuItem } from "../../feature/addMenuItemSlice";
 import { fetchCategories } from "../../feature/categorySlice";
 import Loading from "../Loading";
-import images from "../../assets/assets";
 import { motion } from "framer-motion";
 import { HiArrowLeft, HiCloudUpload, HiCheckCircle, HiTrash } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import Alert from "../alert/Alert";
 
 const AddFoodItems = () => {
-  const { loading, error, massage } = useSelector(
+  const { loading } = useSelector(
     (state) => state.addMenuItemSlice
   );
   const { data: categories } = useSelector((state) => state.categories);

@@ -4,7 +4,6 @@ import { TiShoppingCart } from "react-icons/ti";
 import { MdAccountCircle } from "react-icons/md";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutCustomer } from "../feature/customerAuthSlice";
-import images from "../assets/assets";
 
 const Dashboard = () => {
   const dispatch = useDispatch();

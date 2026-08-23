@@ -27,14 +27,7 @@ export const loginCustomer = createAsyncThunk(
 
 export const logoutCustomer = createAsyncThunk(
     "customerAuth/logout",
-    async (_, { rejectWithValue }) => {
-        try {
-            // Can optionally call a backend logout API here
-            return true;
-        } catch (err) {
-            return rejectWithValue("Logout failed");
-        }
-    }
+    async () => true
 );
 
 const initialState = {

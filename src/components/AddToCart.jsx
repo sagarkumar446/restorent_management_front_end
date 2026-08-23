@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { cartActions } from "../feature/cartSlice";
 import { motion, AnimatePresence } from "framer-motion";
-import { HiPlus, HiMinus, HiTrash, HiShieldCheck, HiCheckCircle, HiXCircle } from "react-icons/hi";
+import { HiPlus, HiMinus, HiShieldCheck, HiCheckCircle, HiXCircle } from "react-icons/hi";
 import { NavLink } from "react-router-dom";
 import axios from "axios";
 import { baseURL } from "../service";
