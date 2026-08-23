@@ -136,6 +136,22 @@ jobs:
           done
           echo "Backend failed to start"; tail -100 backend.log; exit 1
 
+      - name: Seed database
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot restaurant_management_system << 'SQL'
+          INSERT INTO category (name, display_name, emoji) VALUES
+            ('GRAINS', 'Grains & Main Course', '🍛'),
+            ('SNACKS', 'Snacks & Starters', '🍟'),
+            ('DESSERTS', 'Desserts', '🍰'),
+            ('BEVERAGES', 'Beverages', '🥤')
+          ON DUPLICATE KEY UPDATE name=name;
+          INSERT INTO menu_item (item_name, description, price, category, veg, image) VALUES
+            ('Margherita Pizza', 'Classic cheese and tomato', 12.99, 'SNACKS', 1, FROM_BASE64('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')),
+            ('Chocolate Lava Cake', 'Warm molten chocolate cake', 8.50, 'DESSERTS', 1, FROM_BASE64('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')),
+            ('Mango Lassi', 'Creamy mango yogurt drink', 4.99, 'BEVERAGES', 1, FROM_BASE64('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')),
+            ('Chicken Tikka', 'Char-grilled spiced chicken', 10.99, 'GRAINS', 0, FROM_BASE64('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
+          SQL
+
       - name: Run e2e tests
         run: npx playwright test
 
